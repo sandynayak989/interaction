@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: yourapp
+    env: python
+    plan: free
+    buildCommand: |
+      apt-get update && apt-get install -y build-essential
+      pip install -r requirements.txt
+    startCommand: gunicorn --workers=2 --bind=0.0.0.0:$PORT interaction:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
+      - key: FLASK_SECRET_KEY
+        value: your_secure_key  # Replace with a random string
