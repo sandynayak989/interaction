@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .product-details {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .product-details img {
+            max-width: 300px;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .product-details p {
+            margin: 10px 0;
+            color: #333;
+        }
+        form {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Product Details</h1>
+    <div class="product-details">
+        <img src="{{ product['image_path'] }}" alt="{{ product['title'] }}" onerror="this.src='https://via.placeholder.com/300';">
+        <p>ID: {{ product['id'] }}</p>
+        <p>Title: {{ product['title'] }}</p>
+        <p>Brand: {{ product['brand'] }}</p>
+        <p>Color: {{ product['color'] }}</p>
+        <p>Category: {{ product['category'] }} / {{ product['sub_category'] }}</p>
+        <p>Material: {{ product['material'] }}</p>
+        <p>Occasion: {{ product['occasion'] }}</p>
+        <p>Details: {{ product['preprocessed_product_details'] }}</p>
+    </div>
+    <form method="POST">
+        <button type="submit" name="action" value="like">Like</button>
+        <button type="submit" name="action" value="dislike">Dislike</button>
+        <button type="submit" name="action" value="cart">Add to Cart</button>
+        <button type="submit" name="action" value="buy">Buy</button>
+    </form>
+    <a class="back-link" href="{{ url_for('catalog') }}">Back to Catalog</a>
+</body>
+</html>
