@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 import pandas as pd
 import os
 import hashlib
+import uuid
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_secret_key')  # Secure key for production
@@ -40,8 +41,20 @@ if not os.path.exists(interaction_file):
 def serve_image(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'images'), filename)
 
-# Function to generate user_id from IP address
-def generate_user_id(ip_address):
+# Function to generate user_id from IP address or session
+def generate_user_id():
+    # Try to get client IP from X-Forwarded-For header
+    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+    # X-Forwarded-For may contain multiple IPs; take the first (client IP)
+    if ',' in ip_address:
+        ip_address = ip_address.split(',')[0].strip()
+    
+    # If IP is invalid or a proxy IP (e.g., 172.x.x.x), use a random session ID
+    if not ip_address or ip_address.startswith(('10.', '172.', '192.168.')):
+        if 'random_user_id' not in session:
+            session['random_user_id'] = str(uuid.uuid4())
+        return hashlib.sha256(session['random_user_id'].encode('utf-8')).hexdigest()
+    
     return hashlib.sha256(ip_address.encode('utf-8')).hexdigest()
 
 # Function to log interaction
@@ -72,11 +85,10 @@ def log_interaction(user_id, product_id, click=0, like=0, dislike=0, cart=0, buy
     
     interactions.to_csv(interaction_file, index=False)
 
-# Route for root, auto-assign user_id based on IP
+# Route for root, auto-assign user_id based on IP or session
 @app.route('/')
 def index():
-    ip_address = request.remote_addr
-    session['user_id'] = generate_user_id(ip_address)
+    session['user_id'] = generate_user_id()
     return redirect(url_for('catalog'))
 
 # Route to display catalog with pagination, randomization, and category filters
@@ -84,8 +96,7 @@ def index():
 @app.route('/catalog/<int:page>')
 def catalog(page=1):
     if 'user_id' not in session:
-        ip_address = request.remote_addr
-        session['user_id'] = generate_user_id(ip_address)
+        session['user_id'] = generate_user_id()
     
     # Get selected category and sub_category from query parameters
     selected_category = request.args.get('category', '')
@@ -126,8 +137,7 @@ def catalog(page=1):
 @app.route('/product/<int:product_id>', methods=['GET', 'POST'])
 def product(product_id):
     if 'user_id' not in session:
-        ip_address = request.remote_addr
-        session['user_id'] = generate_user_id(ip_address)
+        session['user_id'] = generate_user_id()
     
     # Find the product
     product = product_catalog[product_catalog['id'] == product_id].to_dict(orient='records')
@@ -161,6 +171,7 @@ def product(product_id):
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
+    session.pop('random_user_id', None)  # Clear random ID if used
     return redirect(url_for('index'))
 
 # Route to download interactions.csv with password protection
