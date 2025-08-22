@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 import pandas as pd
 import os
 import hashlib
@@ -6,7 +6,7 @@ import hashlib
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_secret_key')  # Secure key for production
 
-# Define paths for Render (persistent disk or tmp for free tier)
+# Define paths for Render
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 catalog_file = os.path.join(BASE_DIR, "cleaned_products1.csv")
 interaction_file = os.path.join(BASE_DIR, "interactions.csv")
@@ -162,6 +162,22 @@ def product(product_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('index'))
+
+# Route to download interactions.csv with password protection
+@app.route('/download_interactions', methods=['GET', 'POST'])
+def download_interactions():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == 'sandy1234':
+            try:
+                return send_file(interaction_file, as_attachment=True, download_name='interactions.csv')
+            except FileNotFoundError:
+                flash('Error: interactions.csv not found.', 'error')
+                return render_template('download.html')
+        else:
+            flash('Incorrect password.', 'error')
+            return render_template('download.html')
+    return render_template('download.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
